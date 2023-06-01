@@ -1,0 +1,151 @@
+@page "/user"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Users</PageTitle>
+
+<h1>Users</h1>
+
+<p>This page show all users in the DB</p>
+
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Password</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="First Name" @bind="@first_Name" @oninput="@((e) => { first_Name=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Last Name" @bind="@last_Name" @oninput="@((e) => { last_Name=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Email" @bind="@email" @oninput="@((e) => { email=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Phone" @bind="@phone" @oninput="@((e) => { phone=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Password" @bind="@password" @oninput="@((e) => { password=(string)e.Value;})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddUser(first_Name, last_Name, email, phone)">Add User</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (User user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.FirstName</td>
+                    <td>@user.LastName</td>
+                    <td>@user.Email</td>
+                    <td>@user.Phone</td>
+                    <th>
+                        <Button @onclick="() => EditUser(user)">Edit</Button>
+                        <Button @onclick="() => RemoveUser(user)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string first_Name {get;set;} = "";
+    private string last_Name {get;set;} = "";
+    private string email {get;set;} = "";
+    private string phone {get;set;} = "";
+    private string password {get;set;} = "";
+
+    private List<User>? users;
+
+    protected override void OnInitialized()
+    {
+        users = UserController.ReadAll();
+    }
+
+    private void UpdateData(){
+        users = UserController.ReadAll();
+    }
+
+    private async void RemoveUser(User user)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with deletion:");
+        if (proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        List<UserLogger> userLoggers = (from uL in UserLoggerController.ReadAll() where uL.UserId == user.Id select uL).ToList();
+        List<Logger> loggers = new List<Logger>();
+        foreach (UserLogger userLogger in userLoggers) {
+            Logger logger = await LoggerController.Read(userLogger.LoggerId);
+            loggers.Add(logger);
+        }
+        foreach (Logger logger in loggers)
+        {
+            await UserLoggerRelationController.BreakRelation(user, logger);
+        }
+        await UserController.Delete(user);
+        UpdateData();
+        
+        StateHasChanged();
+
+        await JsRuntime.InvokeVoidAsync("alert", "Deletion has been completed, changes have been made.");
+    }
+
+    private void EditUser(User user)
+    {
+        //DO STUFF
+        StateHasChanged();
+    }
+
+    private async void AddUser(string firstName, string lastName, string email, string phone, string password)
+    {
+
+        if (firstName == "" || lastName == "" || email == "" || phone == "" || password == ""){
+            return;
+        }
+        User user = new User(){
+            Id = 0,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            Phone = phone
+            Password = password};
+        await UserController.Create(user);
+        UpdateData();
+
+        StateHasChanged();
+    }
+}
