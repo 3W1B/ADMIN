@@ -57,7 +57,7 @@ else
                     <td>@userLogger.LoggerId</td>
                     <th>
                         <Button @onclick="() => EditUserLogger(userLogger)">Edit</Button>
-                        <Button @onclick="() => RemoveUserLogger(userLogger)">Remove</Button>
+                        <Button @onclick="() => BreakUserLogger(userLogger)">BreakRelation</Button>
                     </th>
                 </tr>
             }
@@ -80,16 +80,23 @@ else
         userLoggers = UserLoggerController.ReadAll();
     }
 
-    private async void RemoveUserLogger(UserLogger userLogger)
+    private async void BreakUserLogger(UserLogger userLogger)
     {
-        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with userLogger deletion:");
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with breaking relation:");
         if (proceed == null || proceed.ToLower() != "confirm"){
             await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
             return;
         }
 
-        await UserLoggerController.Delete(userLogger);
+        int userId = (int)userLogger.UserId;
+        string loggerId = userLogger.LoggerId;
+
+        await UserLoggerRelationController.BreakRelation(
+            await UserController.Read(userId),
+            await LoggerController.Read(loggerId)
+        );
         UpdateData();
+
         StateHasChanged();
     }
 
