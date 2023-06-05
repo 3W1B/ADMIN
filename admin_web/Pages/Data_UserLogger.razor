@@ -91,11 +91,13 @@ else
         int userId = (int)userLogger.UserId;
         string loggerId = userLogger.LoggerId;
 
-        await UserLoggerRelationController.BreakRelation(
+        string guid = await UserLoggerRelationController.BreakRelation(
             await UserController.Read(userId),
             await LoggerController.Read(loggerId)
         );
         UpdateData();
+
+        await JsRuntime.InvokeVoidAsync("alert", $"Relation has been broken between \nUser: {userId}\nLogger: {loggerId}\nThe new password is: {guid}");
 
         StateHasChanged();
     }

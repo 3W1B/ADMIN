@@ -84,12 +84,12 @@ else
             return;
         }
 
-        Guid guid = Guid.NewGuid();
-        logger.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(guid.ToString());
+        string guid = Guid.NewGuid().ToString();
+        logger.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(guid);
 
         await LoggerController.Update(logger);
 
-        await JsRuntime.InvokeVoidAsync("alert", $"The new password is: {guid.ToString()}");
+        await JsRuntime.InvokeVoidAsync("alert", $"The new password is: {guid}");
     }
     
 }
