@@ -1,0 +1,95 @@
+@page "/locations/edit/{id:int}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit Location</PageTitle>
+
+<h1>Edit Location</h1>
+
+@if (location == null){
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>LoggerId*</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="LoggerId" @bind="@loggerId" @oninput="@((e) => { loggerId=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="Latitude" @bind="@latitude" @oninput="@((e) => { latitude=ValidateInput((string)e.Value);})"/>
+                </th>
+                <th>
+                    <input type="text" placeholder="Longitude" @bind="@longitude" @oninput="@((e) => { longitude=ValidateInput((string)e.Value);})" />
+                </th>
+            </tr>
+        </tbody>
+</table>
+<row> 
+    <col>
+        <Button @onclick="() => Save(location)">Save</Button>
+    <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+</row>
+}
+
+@code 
+{
+    [Parameter]
+    public int id { get; set; }
+
+    public string? loggerId { get; set; }
+    public double latitude { get; set; }
+    public double longitude { get; set; }
+
+    public Location location { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        location = await LocationController.Read(id);
+        loggerId = location.LoggerId;
+        latitude = location.Latitude;
+        longitude = location.Longitude;
+    }
+
+    private async void Save(Location location)
+    {
+        if (string.IsNullOrEmpty(loggerId) || string.IsNullOrWhiteSpace(loggerId) || latitude == 0 || longitude == 0)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Please fill in all fields");
+            return;
+        }
+
+        location.LoggerId = loggerId;
+        location.Latitude = latitude;
+        location.Longitude = longitude;
+        await LocationController.Update(location);
+
+        NavigationManager.NavigateTo("/locations");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/locations");
+    }
+
+    private double ValidateInput(string input)
+    {
+
+        if (double.TryParse(input, out double d) && !Double.IsNaN(d) && !Double.IsInfinity(d))
+        {
+            return double.Parse(input);
+        }
+
+        return 0;
+    }
+
+}

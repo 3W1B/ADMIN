@@ -1,0 +1,128 @@
+@page "/userloggers"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>UserLoggers</PageTitle>
+
+<h1>UserLoggers</h1>
+
+<p>This page show all userlogger in the DB</p>
+
+@if (userLoggers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UserId*</th>
+                <th>LoggerId*</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="UserId" @bind="@userId" @oninput="@((e) => {userId=(int?)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="LoggerId" @bind="@loggerId" @oninput="@((e) => {loggerId=(string?)e.Value;})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddUserLogger(userId, loggerId)">Add UserLogger</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>UserId</th>
+                <th>LoggerId</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (UserLogger userLogger in userLoggers)
+            {
+                <tr>
+                    <td>@userLogger.Id</td>
+                    <td>@userLogger.UserId</td>
+                    <td>@userLogger.LoggerId</td>
+                    <th>
+                        <Button @onclick="() => EditUserLogger(userLogger)">Edit</Button>
+                        <Button @onclick="() => BreakUserLogger(userLogger)">BreakRelation</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private int? userId {get;set;} = null;
+    private string? loggerId {get;set;} = null;
+
+    private List<UserLogger>? userLoggers;
+
+    protected override void OnInitialized()
+    {
+        userLoggers = UserLoggerController.ReadAll();
+    }
+
+    private void UpdateData(){
+        userLoggers = UserLoggerController.ReadAll();
+    }
+
+    private async void BreakUserLogger(UserLogger userLogger)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with breaking relation:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        int userId = (int)userLogger.UserId;
+        string loggerId = userLogger.LoggerId;
+
+        string guid = await UserLoggerRelationController.BreakRelation(
+            await UserController.Read(userId),
+            await LoggerController.Read(loggerId)
+        );
+        UpdateData();
+
+        await JsRuntime.InvokeVoidAsync("alert", $"Relation has been broken between \nUser: {userId}\nLogger: {loggerId}\nThe new password is: {guid}");
+
+        StateHasChanged();
+    }
+
+    private void EditUserLogger(UserLogger userLogger)
+    {
+        NavigationManager.NavigateTo($"/userloggers/edit/{userLogger.Id}");
+    }
+
+    private async void AddUserLogger(int? userId, string? loggerId)
+    {
+
+        if (userId == null || loggerId == ""){
+            return;
+        }
+        UserLogger userLogger = new UserLogger(){
+            Id = 0,
+            UserId = userId,
+            LoggerId = loggerId};
+        await UserLoggerController.Create(userLogger);
+        UpdateData();
+
+        this.userId = null;
+        this.loggerId = null;
+
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,163 @@
+@page "/loginsides"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>LogInsides</PageTitle>
+
+<h1>LogInsides</h1>
+
+<p>This page shows all logs for insides in the DB</p>
+
+@if (logInsides == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Log ID*</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th>Radon LTA</th>
+                <th>Radon STA</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="LogId" @bind="@logId" @oninput="@((e) => { logId=(int?)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Temperature" @bind="@temperature" @oninput="@((e) => { temperature=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Humidity" @bind="@humidity" @oninput="@((e) => { humidity=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Radon (LTA)" @bind="@radonLta" @oninput="@((e) => { radonLta=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Radon (STA)" @bind="@radonSta" @oninput="@((e) => { radonSta=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddLogInside(logId, temperature, humidity, radonLta, radonSta)">Add LogInside</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Log Id</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th>Radon LTA</th>
+                <th>Radon STA</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (LogInside logInside in logInsides)
+            {
+                <tr>
+                    <td>@logInside.Id</td>
+                    <td>@logInside.LogId</td>
+                    <td>@logInside.Temperature</td>
+                    <td>@logInside.Humidity</td>
+                    <td>@logInside.RadonLta</td>
+                    <td>@logInside.RadonSta</td>
+                    <th>
+                        <Button @onclick="() => EditLogInside(logInside)">Edit</Button>
+                        <Button @onclick="() => RemoveLogInside(logInside)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private int? logId { get; set; } = null;
+    private double temperature { get; set; } = 0.0;
+    private double humidity { get; set; } = 0.0;
+    private double radonLta { get; set; } = 0.0;
+    private double radonSta { get; set; } = 0.0;
+
+    private List<LogInside>? logInsides;
+
+    protected override void OnInitialized()
+    {
+        logInsides = LogInsideController.ReadAll();
+    }
+
+    private void UpdateData()
+    {
+        logInsides = LogInsideController.ReadAll();
+    }
+
+    private async void AddLogInside(int? logId, double temperature, double humidity, double radonLta, double radonSta)
+    {
+        if (logId == null || temperature == null || humidity == null || radonLta == null || radonSta == null)
+        {
+            return;
+        }
+
+        LogInside logInside = new LogInside()
+            {
+                Id = 0,
+                LogId = logId,
+                Temperature = temperature,
+                Humidity = humidity,
+                RadonLta = radonLta,
+                RadonSta = radonSta
+            };
+        await LogInsideController.Create(logInside);
+        UpdateData();
+
+        this.logId = null;
+        this.temperature = 0.0;
+        this.humidity = 0.0;
+        this.radonLta = 0.0;
+        this.radonSta = 0.0;
+
+        StateHasChanged();
+    }
+
+    private async void EditLogInside(LogInside logInside)
+    {
+        NavigationManager.NavigateTo($"/loginsides/edit/{logInside.Id}");
+    }
+
+    private async void RemoveLogInside(LogInside logInside)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with logInside deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        await LogInsideController.Delete(logInside);
+        UpdateData();
+
+        StateHasChanged();
+    }
+
+    private double ValidateInput(string input) {
+
+        if (double.TryParse(input, out double d) && !Double.IsNaN(d) && !Double.IsInfinity(d))
+        {
+            return double.Parse(input);
+        }
+
+        return 0;
+    }
+
+}

@@ -1,0 +1,110 @@
+@page "/loginsides/edit/{id:int}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit LogInside</PageTitle>
+
+<h1>Edit LogInside</h1>
+
+@if (logInside == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>LoggerId*</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th>Radon LTA</th>
+                <th>Radon STA</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="Log Id" @bind="@logId" @oninput="@((e) => { logId=(int?)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Temperature" @bind="@temperature" @oninput="@((e) => { temperature=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Humidity" @bind="@humidity" @oninput="@((e) => { humidity=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Radon (LTA)" @bind="@radonLta" @oninput="@((e) => { radonLta=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Radon (STA)" @bind="@radonSta" @oninput="@((e) => { radonSta=ValidateInput((string)e.Value);})" />
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <row>
+        <col>
+        <Button @onclick="() => Save(logInside)">Save</Button>
+        <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+    </row>
+}
+
+@code
+{
+    [Parameter]
+    public int id { get; set; }
+
+    private int? logId { get; set; } = null;
+    private double temperature { get; set; } = 0.0;
+    private double humidity { get; set; } = 0.0;
+    private double radonLta { get; set; } = 0.0;
+    private double radonSta { get; set; } = 0.0;
+
+    public LogInside logInside { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        logInside = await LogInsideController.Read(id);
+        logId = logInside.LogId;
+        temperature = logInside.Temperature;
+        humidity = logInside.Humidity;
+    }
+
+    private async void Save(LogInside logInside)
+    {
+        if (logId == null || temperature == null || humidity == null || radonLta == null || radonSta == null)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Please fill all fields");
+            return;
+        }
+
+        logInside.LogId = logId;
+        logInside.Temperature = temperature;
+        logInside.Humidity = humidity;
+        logInside.RadonLta = radonLta;
+        logInside.RadonSta = radonSta;
+        await LogInsideController.Update(logInside);
+
+        NavigationManager.NavigateTo("/logInsides");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/logInsides");
+    }
+
+    private double ValidateInput(string input)
+    {
+
+        if (double.TryParse(input, out double d) && !Double.IsNaN(d) && !Double.IsInfinity(d))
+        {
+            return double.Parse(input);
+        }
+
+        return 0;
+    }
+
+}

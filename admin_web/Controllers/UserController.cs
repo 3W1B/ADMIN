@@ -10,6 +10,9 @@ public abstract class UserController
 
     public static async Task Create(User user)
     {
+        String password = BCrypt.Net.BCrypt.EnhancedHashPassword(user.Password);
+        user.Password = password;
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
     }

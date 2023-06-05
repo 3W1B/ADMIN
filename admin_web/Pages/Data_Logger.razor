@@ -1,0 +1,95 @@
+@page "/loggers"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Loggers</PageTitle>
+
+<h1>Loggers</h1>
+
+<p>This page shows all loggers in the DB</p>
+
+@if (loggers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Password</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Logger logger in loggers)
+            {
+                <tr>
+                    <td>@logger.Id</td>
+                    <td>
+                        <Button @onclick="() => ResetPassword(logger)">Reset</Button>
+                    </td>
+                    <th>
+                        <Button @onclick="() => EditLogger(logger)">Edit</Button>
+                        <Button @onclick="() => RemoveLogger(logger)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string password {get;set;} = "";
+
+    private List<Logger>? loggers;
+
+    protected override void OnInitialized()
+    {
+        loggers = LoggerController.ReadAll();
+    }
+
+    private void UpdateData(){
+        loggers = LoggerController.ReadAll();
+    }
+
+    private async void RemoveLogger(Logger logger)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with logger deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        await LoggerController.Delete(logger);
+        UpdateData();
+
+        StateHasChanged();
+    }
+
+    private void EditLogger(Logger logger)
+    {
+        NavigationManager.NavigateTo($"/loggers/edit/{logger.Id}");
+    }
+
+    private async void ResetPassword(Logger logger)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with password reset:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Reset has been cancelled, no changes were made.");
+            return;
+        }
+
+        string guid = Guid.NewGuid().ToString();
+        logger.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(guid);
+
+        await LoggerController.Update(logger);
+
+        await JsRuntime.InvokeVoidAsync("alert", $"The new password is: {guid}");
+    }
+    
+}

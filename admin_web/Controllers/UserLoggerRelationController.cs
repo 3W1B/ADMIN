@@ -12,10 +12,11 @@ namespace admin_web.Controllers
         {
             UserLogger userLoggers = (from uL in context.UserLoggers where uL.UserId == user.Id && uL.LoggerId == logger.Id select uL).First();
             context.UserLoggers.Remove(userLoggers);
-            logger.Password = Guid.NewGuid().ToString();
+            string guid = Guid.NewGuid().ToString();
+            logger.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(guid);
             context.Loggers.Update(logger);
             await context.SaveChangesAsync();
-            return logger.Password;
+            return guid;
         }
     }
 }
