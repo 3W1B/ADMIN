@@ -1,8 +1,9 @@
-@page "/user"
+@page "/users"
 @using admin_web.Data;
 @using admin_web.Controllers;
 @using admin_web.Entities;
-@inject IJSRuntime JsRuntime
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
 
 <PageTitle>Users</PageTitle>
 
@@ -30,10 +31,10 @@ else
         <tbody>
             <tr>
                 <th>
-                    <input type="text" placeholder="First Name" @bind="@first_Name" @oninput="@((e) => { first_Name=(string)e.Value;})" />
+                    <input type="text" placeholder="First Name" @bind="@firstName" @oninput="@((e) => { firstName=(string)e.Value;})" />
                 </th>
                 <th>
-                    <input type="text" placeholder="Last Name" @bind="@last_Name" @oninput="@((e) => { last_Name=(string)e.Value;})" />
+                    <input type="text" placeholder="Last Name" @bind="@lastName" @oninput="@((e) => { lastName=(string)e.Value;})" />
                 </th>
                 <th>
                     <input type="text" placeholder="Email" @bind="@email" @oninput="@((e) => { email=(string)e.Value;})" />
@@ -45,7 +46,7 @@ else
                     <input type="text" placeholder="Password" @bind="@password" @oninput="@((e) => { password=(string)e.Value;})" />
                 </th>
                 <th>
-                    <Button @onclick="() => AddUser(first_Name, last_Name, email, phone)">Add User</Button>
+                    <Button @onclick="() => AddUser(firstName, lastName, email, phone, password)">Add User</Button>
                 </th>
             </tr>
         </tbody>
@@ -81,8 +82,8 @@ else
 }
 
 @code {
-    private string first_Name {get;set;} = "";
-    private string last_Name {get;set;} = "";
+    private string firstName {get;set;} = "";
+    private string lastName {get;set;} = "";
     private string email {get;set;} = "";
     private string phone {get;set;} = "";
     private string password {get;set;} = "";
@@ -100,8 +101,8 @@ else
 
     private async void RemoveUser(User user)
     {
-        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with deletion:");
-        if (proceed.ToLower() != "confirm"){
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with account deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
             await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
             return;
         }
@@ -114,11 +115,18 @@ else
         }
         foreach (Logger logger in loggers)
         {
-            await UserLoggerRelationController.BreakRelation(user, logger);
+            string newPassword = await UserLoggerRelationController.BreakRelation(user, logger);
+            await JsRuntime.InvokeVoidAsync("alert", $"Relation between user {user.Id} and logger {logger.Id} has been broken.\nNew password for logger: {newPassword}");
         }
         await UserController.Delete(user);
         UpdateData();
         
+        this.firstName = "";
+        this.lastName = "";
+        this.email = "";
+        this.phone = "";
+        this.password = "";
+
         StateHasChanged();
 
         await JsRuntime.InvokeVoidAsync("alert", "Deletion has been completed, changes have been made.");
@@ -126,8 +134,7 @@ else
 
     private void EditUser(User user)
     {
-        //DO STUFF
-        StateHasChanged();
+        NavigationManager.NavigateTo($"/users/edit/{user.Id}");
     }
 
     private async void AddUser(string firstName, string lastName, string email, string phone, string password)
@@ -141,7 +148,7 @@ else
             FirstName = firstName,
             LastName = lastName,
             Email = email,
-            Phone = phone
+            Phone = phone,
             Password = password};
         await UserController.Create(user);
         UpdateData();

@@ -1,0 +1,141 @@
+@page "/locations"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Locations</PageTitle>
+
+<h1>Locations</h1>
+
+<p>This page shows all locations in the DB</p>
+
+@if (locations == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>LoggerId*</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="Logger Id" @bind="@loggerId" @oninput="@((e) => { loggerId=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Latitude" @bind="@latitude" @oninput="@((e) => { latitude=ValidateInput((string)e.Value);})"/>
+                </th>
+                <th>
+                    <input type="text" placeholder="Longitude" @bind="@longitude" @oninput="@((e) => { longitude=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddLocation(loggerId, latitude, longitude)">Add Location</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>LoggerId</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Location location in locations)
+            {
+                <tr>
+                    <td>@location.Id</td>
+                    <td>@location.LoggerId</td>
+                    <td>@location.Latitude</td>
+                    <td>@location.Longitude</td>
+                    <th>
+                        <Button @onclick="() => EditLocation(location)">Edit</Button>
+                        <Button @onclick="() => RemoveLocation(location)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code{
+
+    private string loggerId {get;set;} = "";
+    private double latitude {get;set;} = 0.0;
+    private double longitude {get;set;} = 0.0;
+
+    private List<Location>? locations;
+
+    protected override void OnInitialized()
+    {
+        locations = LocationController.ReadAll();
+    }
+
+    private void UpdateData(){
+        locations = LocationController.ReadAll();
+    }
+
+    private async void AddLocation(string loggerId, double latitude, double longitude)
+    {
+
+        if (loggerId == "" || latitude == null || longitude == null){
+            return;
+        }
+        Location location = new Location(){
+            Id = 0,
+            LoggerId = loggerId,
+            Latitude = latitude,
+            Longitude = longitude};
+        await LocationController.Create(location);
+        UpdateData();
+
+        this.loggerId = "";
+        this.latitude = 0.0;
+        this.longitude = 0.0;
+
+        StateHasChanged();
+    }
+
+    private void EditLocation(Location location)
+    {
+        NavigationManager.NavigateTo($"/locations/edit/{location.Id}");
+    }
+
+    private async void RemoveLocation(Location location)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with location deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        await LocationController.Delete(location);
+        UpdateData();
+
+        StateHasChanged();
+    }
+
+    private double ValidateInput(string input) {
+
+        if (double.TryParse(input, out double d) && !Double.IsNaN(d) && !Double.IsInfinity(d))
+        {
+            return double.Parse(input);
+        }
+
+        return 0;
+    }
+
+}

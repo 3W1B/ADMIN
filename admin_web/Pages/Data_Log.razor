@@ -1,0 +1,140 @@
+@page "/logs"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Logs</PageTitle>
+
+<h1>Logs</h1>
+
+<p>This page shows all logs in the DB</p>
+
+@if (logs == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>LoggerId*</th>
+                <th>Timestamp</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="LoggerId" @bind="@loggerId" @oninput="@((e) => { loggerId=(string)e.Value;})" />
+                </th>
+                <th>
+                    <input type="datetime-local" @bind="@timestamp" @oninput="@((e) => { timestamp=DateTime.Parse((string)e.Value);})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddLog(loggerId, timestamp)">Add Log</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>LoggerId</th>
+                <th>Timestamp</th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Log log in logs)
+            {
+                <tr>
+                    <td>@log.Id</td>
+                    <td>@log.LoggerId</td>
+                    <td>@log.Timestamp</td>
+                    <td>
+                        <Button @onclick="() => ShowInsideLogs(log)">LogInside</Button>
+                    </td>
+                    <td>
+                        <Button @onclick="() => ShowOutsideLogs(log)">LogOutside</Button>
+                    </td>
+                    <th>
+                        <Button @onclick="() => EditLog(log)">Edit</Button>
+                        <Button @onclick="() => RemoveLog(log)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code{
+
+    private string loggerId {get;set;} = "";
+    private DateTime timestamp {get;set;} = DateTime.Now;
+
+    private List<Log>? logs;
+
+    protected override void OnInitialized()
+    {
+        logs = LogController.ReadAll();
+    }
+
+    private void UpdateData(){
+        logs = LogController.ReadAll();
+    }
+
+    private async void AddLog(string loggerId, DateTime timestamp)
+    {
+
+        if (loggerId == "" || timestamp == null){
+            return;
+        }
+        Log log = new Log(){
+            Id = 0,
+            LoggerId = loggerId,
+            Timestamp = timestamp};
+        await LogController.Create(log);
+        UpdateData();
+
+        this.loggerId = "";
+        this.timestamp = DateTime.Now;
+
+        StateHasChanged();
+    }
+
+    private void EditLog(Log log)
+    {
+        NavigationManager.NavigateTo($"/logs/edit/{log.Id}");
+    }
+
+    private async void RemoveLog(Log log)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with log deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        //DO STUFF - TODO
+        StateHasChanged();
+    }
+
+    private void ShowInsideLogs(Log log)
+    {
+        //DO STUFF - TODO
+        StateHasChanged();
+    }
+
+    private void ShowOutsideLogs(Log log)
+    {
+        //DO STUFF - TODO
+        StateHasChanged();
+    }
+
+}

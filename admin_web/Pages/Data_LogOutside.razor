@@ -1,0 +1,144 @@
+@page "/logoutsides"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>LogOutsides</PageTitle>
+
+<h1>LogOutsides</h1>
+
+<p>This page shows all logs for outside in the DB</p>
+
+@if (logOutsides == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Log ID*</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="Log Id" @bind="@logID" @oninput="@((e) => { logID=(int?)e.Value;})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Temperature" @bind="@temperature" @oninput="@((e) => { temperature=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <input type="text" placeholder="Humidity" @bind="@humidity" @oninput="@((e) => { humidity=ValidateInput((string)e.Value);})" />
+                </th>
+                <th>
+                    <Button @onclick="() => AddLogOutside(logID, temperature, humidity)">Add LogOutside</Button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Log ID</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (LogOutside logOutside in logOutsides)
+            {
+                <tr>
+                    <td>@logOutside.Id</td>
+                    <td>@logOutside.LogId</td>
+                    <td>@logOutside.Temperature</td>
+                    <td>@logOutside.Humidity</td>
+                    <th>
+                        <Button @onclick="() => EditLogOutside(logOutside)">Edit</Button>
+                        <Button @onclick="() => RemoveLogOutside(logOutside)">Remove</Button>
+                    </th>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private int? logID { get; set; } = null;
+    private double temperature { get; set; } = 0.0;
+    private double humidity { get; set; } = 0.0;
+
+    private List<LogOutside>? logOutsides;
+
+    protected override void OnInitialized()
+    {
+        logOutsides = LogOutsideController.ReadAll();
+    }
+
+    private void UpdateData()
+    {
+        logOutsides = LogOutsideController.ReadAll();
+    }
+
+    private async void AddLogOutside(int? logId, double temperature, double humidity)
+    {
+        if (logId == null || temperature == null || humidity == null) {
+            return;
+        }
+
+        LogOutside logOutside = new LogOutside()
+            {
+                Id = 0,
+                LogId = logId,
+                Temperature = temperature,
+                Humidity = humidity
+            };
+        await LogOutsideController.Create(logOutside);
+        UpdateData();
+
+        this.logID = null;
+        this.temperature = 0.0;
+        this.humidity = 0.0;
+
+        StateHasChanged();
+    }
+
+    private async void EditLogOutside(LogOutside logOutside)
+    {
+        NavigationManager.NavigateTo($"/logoutsides/edit/{logOutside.Id}");
+    }
+
+    private async void RemoveLogOutside(LogOutside logOutside)
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with logOutside deletion:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
+            return;
+        }
+
+        await LogOutsideController.Delete(logOutside);
+        UpdateData();
+
+        StateHasChanged();
+    }
+
+    private double ValidateInput(string input) {
+
+        if (double.TryParse(input, out double d) && !Double.IsNaN(d) && !Double.IsInfinity(d))
+        {
+            return double.Parse(input);
+        }
+
+        return 0;
+    }
+
+}

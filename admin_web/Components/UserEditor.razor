@@ -1,0 +1,98 @@
+@page "/users/edit/{id:int}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit User</PageTitle>
+
+<h1>Edit User</h1>
+
+@if (user == null){
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>FirstName</th>
+                <th>LastName</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Password</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="FirstName" @bind="@firstName" @oninput="@((e) => { firstName=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="LastName" @bind="@lastName" @oninput="@((e) => { lastName=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="Email" @bind="@email" @oninput="@((e) => { email=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="Phone" @bind="@phone" @oninput="@((e) => { phone=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="Password" @bind="@password" @oninput="@((e) => { password=(string)e.Value;})"  />
+                </th>
+            </tr>
+        </tbody>
+</table>
+<row> 
+    <col>
+        <Button @onclick="() => Save(user)">Save</Button>
+    <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+</row>
+}
+
+@code 
+{
+    [Parameter]
+    public int id { get; set; }
+
+    public string firstName { get; set; }
+    public string lastName { get; set; }
+    public string email { get; set; }
+    public string phone { get; set; }
+    public string password { get; set; }
+
+    public User user { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserController.Read(id);
+        firstName = user.FirstName;
+        lastName = user.LastName;
+        email = user.Email;
+        phone = user.Phone;
+        password = user.Password;
+    }
+
+    private async void Save(User user)
+    {
+        if (firstName == null || lastName == null || email == null || phone == null || password == null)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Please fill all fields");
+            return;
+        }
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.Email = email;
+        user.Phone = phone;
+        user.Password = password;
+        await UserController.Update(user);
+
+        NavigationManager.NavigateTo("/users");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/users");
+    }
+
+}

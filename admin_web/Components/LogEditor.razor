@@ -1,0 +1,77 @@
+@page "/logs/edit/{id:int}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit Log</PageTitle>
+
+<h1>Edit Log</h1>
+
+@if (log == null){
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>LoggerId*</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="Logger Id" @bind="@loggerId" @oninput="@((e) => { loggerId=(string)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="datetime-local" @bind="@timestamp" @oninput="@((e) => { timestamp=DateTime.Parse((string)e.Value);})" />
+                </th>
+            </tr>
+        </tbody>
+</table>
+<row> 
+    <col>
+        <Button @onclick="() => Save(log)">Save</Button>
+    <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+</row>
+}
+
+@code 
+{
+    [Parameter]
+    public int id { get; set; }
+
+    public string? loggerId { get; set; }
+    public DateTime timestamp { get; set; }
+
+    public Log log { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        log = await LogController.Read(id);
+        loggerId = log.LoggerId;
+        timestamp = log.Timestamp;
+    }
+
+    private async void Save(Log log)
+    {
+        if (loggerId == null || timestamp == null)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Please fill in all fields");
+            return;
+        }
+
+        log.LoggerId = loggerId;
+        log.Timestamp = timestamp;
+        await LogController.Update(log);
+
+        NavigationManager.NavigateTo("/logs");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/logs");
+    }
+
+}

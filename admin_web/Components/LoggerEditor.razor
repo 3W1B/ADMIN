@@ -1,0 +1,70 @@
+@page "/loggers/edit/{*id}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit Logger</PageTitle>
+
+<h1>Edit Logger</h1>
+
+@if (logger == null){
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Password</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" @bind="@password" @oninput="@((e) => { password=(string)e.Value;})" />
+                </th>
+            </tr>
+        </tbody>
+</table>
+<row> 
+    <col>
+        <Button @onclick="() => Save(logger)">Save</Button>
+    <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+</row>
+}
+
+@code 
+{
+    [Parameter]
+    public string id { get; set; }
+
+    public string password { get; set; }
+
+    public Logger logger { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        logger = await LoggerController.Read(id);
+        password = logger.Password;
+    }
+
+    private async void Save(Logger logger)
+    {
+        if (password == null)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Password cannot be empty");
+            return;
+        }
+
+        logger.Password = password;
+        await LoggerController.Update(logger);
+
+        NavigationManager.NavigateTo("/loggers");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/loggers");
+    }
+
+}

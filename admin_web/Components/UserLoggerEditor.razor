@@ -1,0 +1,77 @@
+@page "/userloggers/edit/{id:int}"
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Edit UserLogger</PageTitle>
+
+<h1>Edit UserLogger</h1>
+
+@if (userLogger == null){
+    <p><em>Loading...</em></p>
+} else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UserId*</th>
+                <th>LoggerId*</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>
+                    <input type="text" placeholder="UserId" @bind="@userId" @oninput="@((e) => { userId=(int?)e.Value;})"  />
+                </th>
+                <th>
+                    <input type="text" placeholder="LoggerId" @bind="@loggerId" @oninput="@((e) => { loggerId=(string?)e.Value;})" />
+                </th>
+            </tr>
+        </tbody>
+</table>
+<row> 
+    <col>
+        <Button @onclick="() => Save(userLogger)">Save</Button>
+    <col>
+        <Button @onclick="() => Cancel()">Cancel</Button>
+</row>
+}
+
+@code 
+{
+    [Parameter]
+    public int id { get; set; }
+
+    public int? userId { get; set; }
+    public string? loggerId { get; set; }
+
+    public UserLogger userLogger { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        userLogger = await UserLoggerController.Read(id);
+        userId = userLogger.UserId;
+        loggerId = userLogger.LoggerId;
+    }
+
+    private async void Save(UserLogger userLogger)
+    {
+        if (userId == null || loggerId == null)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "Please fill all fields");
+            return;
+        }
+
+        userLogger.UserId = userId;
+        userLogger.LoggerId = loggerId;
+        await UserLoggerController.Update(userLogger);
+
+        NavigationManager.NavigateTo("/userloggers");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/userloggers");
+    }
+
+}
