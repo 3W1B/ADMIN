@@ -1,0 +1,63 @@
+﻿@page "/logoutsides/{id:int}"
+@using admin_web.Data;
+@using admin_web.Controllers;
+@using admin_web.Entities;
+@inject IJSRuntime JsRuntime;
+@inject NavigationManager NavigationManager;
+
+<PageTitle>LogOutsides</PageTitle>
+
+<h1>LogOutsides</h1>
+
+<p>This page shows all logs for outsides in the DB for a log with id: @id</p>
+
+@if (logOutsides == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Log Id</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (LogOutside logOutside in logOutsides)
+            {
+                if (logOutside.LogId == id)
+                {
+                    <tr>
+                        <td>@logOutside.Id</td>
+                        <td>@logOutside.LogId</td>
+                        <td>@logOutside.Temperature</td>
+                        <td>@logOutside.Humidity</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+
+    private int? logId { get; set; } = null;
+    private double temperature { get; set; } = 0.0;
+    private double humidity { get; set; } = 0.0;
+
+    private List<LogOutside>? logOutsides;
+
+    protected override void OnInitialized()
+    {
+        logOutsides = LogOutsideController.ReadAll();
+    }
+
+}

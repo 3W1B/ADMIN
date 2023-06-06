@@ -120,20 +120,18 @@ else
             await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
             return;
         }
-
-        //DO STUFF - TODO
         StateHasChanged();
     }
 
     private void ShowInsideLogs(Log log)
     {
-        //DO STUFF - TODO
+        NavigationManager.NavigateTo($"/loginsides/{log.Id}");
         StateHasChanged();
     }
 
     private void ShowOutsideLogs(Log log)
     {
-        //DO STUFF - TODO
+        NavigationManager.NavigateTo($"/logoutsides/{log.Id}");
         StateHasChanged();
     }
 
