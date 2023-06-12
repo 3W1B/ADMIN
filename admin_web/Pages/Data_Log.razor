@@ -119,6 +119,10 @@ else
             await JsRuntime.InvokeVoidAsync("alert", "Deletion has been cancelled, no changes were made.");
             return;
         }
+
+        await LogController.Delete(log);
+        UpdateData();
+
         StateHasChanged();
     }
 
