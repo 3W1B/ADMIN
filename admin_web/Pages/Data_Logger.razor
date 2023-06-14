@@ -19,6 +19,20 @@ else
     <table class="table">
         <thead>
             <tr>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <Button @onclick="() => AddLogger()">Add New Logger</Button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table">
+        <thead>
+            <tr>
                 <th>ID</th>
                 <th>Password</th>
                 <th></th>
@@ -32,10 +46,10 @@ else
                     <td>
                         <Button @onclick="() => ResetPassword(logger)">Reset</Button>
                     </td>
-                    <th>
+                    <td>
                         <Button @onclick="() => EditLogger(logger)">Edit</Button>
                         <Button @onclick="() => RemoveLogger(logger)">Remove</Button>
-                    </th>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -54,6 +68,29 @@ else
 
     private void UpdateData(){
         loggers = LoggerController.ReadAll();
+    }
+
+    private async void AddLogger()
+    {
+        string? proceed = await JsRuntime.InvokeAsync<string?>("prompt", "Type 'confirm' to proceed with logger creation:");
+        if (proceed == null || proceed.ToLower() != "confirm"){
+            await JsRuntime.InvokeVoidAsync("alert", "Creation has been cancelled, no changes were made.");
+            return;
+        }
+
+        Logger logger = new Logger();
+
+        string guidId = Guid.NewGuid().ToString();
+        logger.Id = guidId;
+
+        string guidPassword = Guid.NewGuid().ToString();
+        logger.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(guidPassword);
+
+        await LoggerController.Create(logger);
+        UpdateData();
+
+        StateHasChanged();
+        await JsRuntime.InvokeVoidAsync("alert", $"The Id is: {guidId}\n The password is: {guidPassword}");
     }
 
     private async void RemoveLogger(Logger logger)
